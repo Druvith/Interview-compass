@@ -1,0 +1,307 @@
+import { useEffect, useMemo, useState } from "react";
+
+type PromptConfig = {
+  prompt_version: string;
+  prompt_text: string;
+  rubric: string[];
+};
+
+type RubricScore = {
+  label: string;
+  score: number;
+  rationale: string;
+};
+
+type AnalysisResult = {
+  rubric: RubricScore[];
+  overall_summary: string;
+};
+
+type AnalysisResponse = {
+  analysis: AnalysisResult;
+  cached: boolean;
+  model: string;
+  video_hash: string;
+};
+
+export default function App() {
+  const [prompt, setPrompt] = useState<PromptConfig | null>(null);
+  const [rubricDraft, setRubricDraft] = useState<string[]>([]);
+  const [newRubricItem, setNewRubricItem] = useState("");
+  const [video, setVideo] = useState<File | null>(null);
+  const [status, setStatus] = useState<string>("");
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [models, setModels] = useState<string[]>([]);
+  const [currentModel, setCurrentModel] = useState("");
+  const [resultModel, setResultModel] = useState("");
+  const [resultCached, setResultCached] = useState(false);
+  const [resultHash, setResultHash] = useState("");
+
+  const headlineText = useMemo(() => {
+    if (running) return "Analyzing interview performance...";
+    if (!analysis) return "Awaiting source input for analysis.";
+    const summary = analysis.overall_summary?.trim();
+    if (!summary) return "Evaluation complete.";
+    // Pick the first sentence or first 100 chars for the headline
+    const firstSentence = summary.split(/[.!?]/)[0];
+    return firstSentence.length > 100 ? `${firstSentence.slice(0, 97)}...` : firstSentence + ".";
+  }, [analysis, running]);
+
+  const fileMeta = useMemo(() => {
+    const filename = video?.name ?? "NO_FILE_LOADED";
+    const model = resultModel || currentModel || "NONE";
+    const hash = resultHash ? resultHash.slice(0, 8).toUpperCase() : "NONE";
+    return `FILE: ${filename} • MODEL: ${model} • HASH: ${hash}`;
+  }, [video, resultModel, currentModel, resultHash]);
+
+  useEffect(() => {
+    fetch("/api/prompt")
+      .then((res) => res.json())
+      .then((data: PromptConfig) => {
+        setPrompt(data);
+        setRubricDraft(data.rubric);
+      })
+      .catch(() => setStatus("OFFLINE: PROMPT_LOAD_FAIL"));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/models")
+      .then((res) => res.json())
+      .then((data: { current: string; available: string[] }) => {
+        setCurrentModel(data.current);
+        setModels(data.available);
+      })
+      .catch(() => setStatus("OFFLINE: MODEL_LOAD_FAIL"));
+  }, []);
+
+  async function handleSavePrompt() {
+    if (!prompt) return;
+    setSaving(true);
+    setStatus("");
+    const payload = { ...prompt, rubric: rubricDraft };
+    try {
+      const res = await fetch("/api/prompt", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error();
+      const data = (await res.json()) as PromptConfig;
+      setPrompt(data);
+      setStatus("SYSTEM: RUBRIC_UPDATED");
+    } catch {
+      setStatus("ERROR: RUBRIC_SAVE_FAIL");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleAddRubric() {
+    const trimmed = newRubricItem.trim();
+    if (!trimmed) return;
+    if (rubricDraft.includes(trimmed)) {
+      setNewRubricItem("");
+      return;
+    }
+    setRubricDraft([...rubricDraft, trimmed]);
+    setNewRubricItem("");
+  }
+
+  function handleRemoveRubric(label: string) {
+    setRubricDraft(rubricDraft.filter((item) => item !== label));
+  }
+
+  async function handleAnalyze() {
+    if (!video) {
+      setStatus("ERROR: MISSING_SOURCE_FILE");
+      return;
+    }
+    setRunning(true);
+    setStatus("BUSY: UPLOADING_ASSETS");
+    setAnalysis(null);
+    setResultModel("");
+    setResultCached(false);
+    setResultHash("");
+
+    const formData = new FormData();
+    formData.append("video", video);
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "ANALYSIS_FAILED");
+      }
+      const data = (await res.json()) as AnalysisResponse;
+      setAnalysis(data.analysis);
+      setResultModel(data.model);
+      setResultCached(data.cached);
+      setResultHash(data.video_hash);
+      setStatus(data.cached ? "SYSTEM: CACHE_HIT" : "SYSTEM: ANALYSIS_SUCCESS");
+    } catch (err) {
+      setStatus(err instanceof Error ? `ERROR: ${err.message.toUpperCase()}` : "ERROR: UNKNOWN");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  function handleExport() {
+    if (!analysis) return;
+    const payload = {
+      model: resultModel,
+      cached: resultCached,
+      video_hash: resultHash,
+      analysis,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `analysis-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleModelChange(nextModel: string) {
+    setCurrentModel(nextModel);
+    try {
+      const res = await fetch("/api/models", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: nextModel }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setStatus("ERROR: MODEL_UPDATE_FAIL");
+    }
+  }
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          INTERVIEW COMPASS <span>/ ANALYSIS</span>
+        </div>
+        <div className={`status-indicator ${running ? "busy" : ""}`}>
+          <div className="dot" />
+          {running ? "ANALYZING_STREAM" : "SYSTEM_READY"}
+        </div>
+      </header>
+
+      <main className="main-layout">
+        <aside className="sidebar">
+          <div className="section">
+            <div className="section-title">Source Input</div>
+            <label className="upload-zone">
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setVideo(e.target.files?.[0] ?? null)}
+              />
+              <div className="upload-icon">↓</div>
+              <div className="upload-text">{video ? "Replace video" : "Drop interview video"}</div>
+              <div className="upload-hint">{video ? video.name : "MP4, MOV up to 100MB"}</div>
+            </label>
+          </div>
+
+          <div className="section">
+            <div className="section-title">Configuration</div>
+            <div className="input-group">
+              <label htmlFor="model-select">Intelligence Model</label>
+              <select
+                id="model-select"
+                value={currentModel}
+                onChange={(e) => handleModelChange(e.target.value)}
+              >
+                {models.map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group">
+              <label>Evaluation Rubric</label>
+              <div className="chip-container">
+                {rubricDraft.map((item) => (
+                  <button key={item} className="chip" onClick={() => handleRemoveRubric(item)} type="button">
+                    {item} <span className="chip-remove">×</span>
+                  </button>
+                ))}
+              </div>
+              <div className="rubric-row">
+                <input
+                  type="text"
+                  value={newRubricItem}
+                  onChange={(e) => setNewRubricItem(e.target.value)}
+                  placeholder="+ Add criterion"
+                  onKeyDown={(e) => e.key === "Enter" && handleAddRubric()}
+                />
+                <button className="chip-add" onClick={handleAddRubric} type="button">
+                  Add
+                </button>
+              </div>
+            </div>
+            <button className="btn-secondary" onClick={handleSavePrompt} disabled={saving}>
+              {saving ? "SAVING..." : "UPDATE_RUBRIC"}
+            </button>
+          </div>
+
+          <div className="sidebar-footer">
+            <button className="btn-primary" onClick={handleAnalyze} disabled={running}>
+              {running ? "PROCESSING..." : "INITIALIZE_ANALYSIS"}
+            </button>
+            <div className="status-line">{status || "NO_ERRORS_DETECTED"}</div>
+          </div>
+        </aside>
+
+        <section className="workspace">
+          <div className="result-header">
+            <div className="file-meta">{fileMeta}</div>
+            <div className="header-actions">
+              <button className="text-button" onClick={handleExport} disabled={!analysis}>
+                Export JSON
+              </button>
+            </div>
+            <h1 className="headline">{headlineText}</h1>
+          </div>
+
+          <div className="summary-card">
+            <div className="section-title">Executive Summary</div>
+            <div className="summary-text">
+              {analysis ? analysis.overall_summary : "System idle. Upload a video and initialize analysis to generate results."}
+            </div>
+          </div>
+
+          <div className="section-title">Detailed Scoring</div>
+          <div className="scores-grid">
+            {analysis ? (
+              analysis.rubric.map((score) => (
+                <div className="score-card" key={score.label}>
+                  <div className="score-header">
+                    <div className="score-label">{score.label}</div>
+                    <div className="score-val">{score.score} / 5</div>
+                  </div>
+                  <div className="bar-bg">
+                    <div className="bar-fill" style={{ width: `${(score.score / 5) * 100}%` }} />
+                  </div>
+                  <div className="score-rationale">{score.rationale}</div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">No scoring data available in the current session.</div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
