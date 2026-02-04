@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Compass // The Obsidian Lens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@100..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0A0A0B;
+            --surface: #141416;
+            --surface-bright: #1C1C1E;
+            --accent: #DFFF00; /* Acid Lime */
+            --muted-sage: #8BA889;
+            --text-main: #F2F2F2;
+            --text-dim: #A1A1AA;
+            --border: rgba(255, 255, 255, 0.08);
+            --font-display: 'Big Shoulders Display', sans-serif;
+            --font-body: 'Instrument Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-lg: 24px;
+            --radius-md: 12px;
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- Noise Texture Overlay --- */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* --- Layout --- */
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .brand-logo {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            line-height: 0.9;
+        }
+
+        .brand-sub {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--muted-sage);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .nav-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .nav-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+
+        .upload-area {
+            background: var(--surface-bright);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .upload-icon {
+            font-size: 24px;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        select, input[type="text"] {
+            background: var(--surface-bright);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        .rubric-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            background: rgba(223, 255, 0, 0.1);
+            border-color: var(--accent);
+        }
+
+        .chip-remove {
+            font-size: 14px;
+            line-height: 1;
+            opacity: 0.5;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .btn-analyze {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-analyze:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+
+        .status-dot.pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- Main Content --- */
+        .workspace {
+            padding: 40px 60px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .header-meta {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--muted-sage);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .workspace h1 {
+            font-family: var(--font-display);
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 0.9;
+            text-transform: uppercase;
+            max-width: 800px;
+        }
+
+        .btn-export {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-export:hover {
+            background: var(--surface-bright);
+            border-color: var(--text-dim);
+        }
+
+        /* --- Video Stage --- */
+        .video-stage {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: linear-gradient(135deg, #141416 0%, #0A0A0B 100%);
+        }
+
+        .play-ring {
+            width: 80px;
+            height: 80px;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+
+        .play-ring:hover {
+            background: var(--accent);
+            color: #000;
+            transform: scale(1.1);
+        }
+
+        /* --- Insights Grid --- */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .executive-summary {
+            grid-column: span 2;
+            padding: 40px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .section-tag {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+        }
+
+        .summary-content {
+            font-size: 20px;
+            line-height: 1.6;
+            font-weight: 400;
+            color: var(--text-main);
+        }
+
+        .scoring-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .score-card {
+            background: var(--surface-bright);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .score-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(223, 255, 0, 0.3);
+        }
+
+        .score-num {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .score-rationale {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        .score-bar-bg {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 1s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        /* --- Reveal Animations --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+
+        /* --- Responsive --- */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none; /* In a real app we'd have a mobile menu */
+            }
+            .workspace h1 {
+                font-size: 48px;
+            }
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">Compass.</div>
+            <div class="brand-sub">Analytical Intelligence</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">01. Source</div>
+            <div class="upload-area">
+                <div class="upload-icon">✦</div>
+                <div class="upload-text">Import Interview</div>
+                <div class="upload-hint">MP4, MOV / Max 100MB</div>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">02. Configuration</div>
+            <div class="config-group">
+                <label class="nav-label" style="margin-bottom: 0;">Model Selection</label>
+                <select>
+                    <option>gemini-2.5-flash-pro</option>
+                    <option>gemini-2.0-flash</option>
+                </select>
+            </div>
+            <div class="config-group">
+                <label class="nav-label" style="margin-bottom: 0;">Evaluation Rubric</label>
+                <div class="rubric-chips">
+                    <div class="chip">Clarity <span class="chip-remove">×</span></div>
+                    <div class="chip">Tech Proficiency <span class="chip-remove">×</span></div>
+                    <div class="chip">Confidence <span class="chip-remove">×</span></div>
+                    <div class="chip">Structured Thinking <span class="chip-remove">×</span></div>
+                </div>
+                <input type="text" placeholder="+ Add Dimension">
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="btn-analyze">
+                Start Analysis <span>→</span>
+            </button>
+            <div class="system-status">
+                <div class="status-dot pulse"></div>
+                Awaiting Vision Input...
+            </div>
+        </div>
+    </aside>
+
+    <!-- Workspace -->
+    <main class="workspace">
+        <header class="workspace-header reveal">
+            <div class="header-left">
+                <div class="header-meta">Session // 04.FEB.26 // ID: 8FB92A</div>
+                <h1>The candidate demonstrates exceptional narrative control.</h1>
+            </div>
+            <button class="btn-export">Export Intelligence</button>
+        </header>
+
+        <!-- Video Stage -->
+        <section class="video-stage reveal delay-1">
+            <div class="video-placeholder">
+                <div class="play-ring">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="header-meta">Preview // candidate_interview_v1.mp4</div>
+            </div>
+        </section>
+
+        <!-- Insights -->
+        <div class="insights-grid">
+            <article class="executive-summary reveal delay-2">
+                <div class="section-tag">Executive Summary</div>
+                <p class="summary-content">
+                    The subject presents a highly cohesive professional narrative, effectively balancing technical depth with accessible articulation. Their responses to system design questions showed significant architectural maturity, particularly in distributed consensus and edge-caching strategies. While technical proficiency is undisputed, there is a minor opportunity for growth in concise delivery during soft-skill behavioral inquiries.
+                </p>
+            </article>
+
+            <div class="scoring-section">
+                <!-- Score 1 -->
+                <div class="score-card reveal delay-3">
+                    <div class="score-num">4.8</div>
+                    <div class="score-label">Technical Depth</div>
+                    <p class="score-rationale">Exhibited profound understanding of LLM orchestration and vector database optimization.</p>
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill" style="width: 96%;"></div>
+                    </div>
+                </div>
+
+                <!-- Score 2 -->
+                <div class="score-card reveal delay-4">
+                    <div class="score-num">4.2</div>
+                    <div class="score-label">Articulation</div>
+                    <p class="score-rationale">Clear, deliberate speech patterns with effective use of technical metaphors.</p>
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill" style="width: 84%;"></div>
+                    </div>
+                </div>
+
+                <!-- Score 3 -->
+                <div class="score-card reveal delay-1">
+                    <div class="score-num">3.9</div>
+                    <div class="score-label">Structural Thinking</div>
+                    <p class="score-rationale">Answers were well-ordered, though occasionally leaned towards excessive detail.</p>
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill" style="width: 78%;"></div>
+                    </div>
+                </div>
+
+                <!-- Score 4 -->
+                <div class="score-card reveal delay-2">
+                    <div class="score-num">4.5</div>
+                    <div class="score-label">Confidence</div>
+                    <p class="score-rationale">Strong presence and eye contact (simulated), maintaining composure under pressure.</p>
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill" style="width: 90%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Simple logic to trigger bar animations on load
+    window.addEventListener('load', () => {
+        const bars = document.querySelectorAll('.score-bar-fill');
+        bars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 600);
+        });
+    });
+</script>
+
+</body>
+</html>

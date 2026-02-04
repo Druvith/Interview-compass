@@ -1,23 +1,28 @@
-.PHONY: dev backend frontend install-backend install-frontend clean
+.PHONY: dev backend frontend install clean
 
+# Setup target: Run this once or when dependencies change
+install:
+	@echo "Installing backend and frontend dependencies..."
+	@cd backend && uv venv && . .venv/bin/activate && uv pip install -e .
+	@cd frontend && npm install
+
+# Dev target: Optimized for speed and reliable process cleanup
 dev:
-	@echo "Starting backend and frontend..."
+	@echo "Starting Interview Compass (The Obsidian Lens)..."
+	@# trap 'kill 0' ensures that when the Makefile process receives SIGINT (Ctrl+C), 
+	@# it sends the signal to all processes in the current process group.
 	@trap 'kill 0' INT TERM EXIT; \
-	( cd backend && uv venv && . .venv/bin/activate && uv pip install -e . && uvicorn src.main:app --reload --port 8000 ) & \
-	( cd frontend && npm install && npm run dev ) & \
+	( cd backend && . .venv/bin/activate && uvicorn src.main:app --reload --port 8000 ) & \
+	( cd frontend && npm run dev ) & \
 	wait
 
 backend:
-	@cd backend && uv venv && . .venv/bin/activate && uv pip install -e . && uvicorn src.main:app --reload --port 8000
+	@cd backend && . .venv/bin/activate && uvicorn src.main:app --reload --port 8000
 
 frontend:
-	@cd frontend && npm install && npm run dev
-
-install-backend:
-	@cd backend && uv venv && . .venv/bin/activate && uv pip install -e .
-
-install-frontend:
-	@cd frontend && npm install
+	@cd frontend && npm run dev
 
 clean:
-	@rm -rf __pycache__ backend/__pycache__ frontend/dist backend/data/cache.json
+	@echo "Cleaning up build artifacts and cache..."
+	@rm -rf backend/__pycache__ frontend/dist backend/data/cache.json
+	@find . -type d -name "__pycache__" -exec rm -rf {} +

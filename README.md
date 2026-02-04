@@ -17,6 +17,12 @@ frontend/  Vite + React UI
 ```
 
 ## How to run
+First, install the dependencies:
+```bash
+make install
+```
+
+Then, start the development servers:
 ```bash
 make dev
 ```

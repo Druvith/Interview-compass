@@ -1,0 +1,70 @@
+{
+  "feaa7546f340e72fd2c5de9c69d5d376261cbd5c4e31e65419d81fe42f5c127e": {
+    "model": "gemini-2.5-flash",
+    "analysis": {
+      "rubric": [
+        {
+          "label": "Communication",
+          "score": 5,
+          "rationale": "The candidate speaks clearly, at a good pace, and with a professional tone. His articulation is excellent, and he maintains good eye contact throughout the recording."
+        },
+        {
+          "label": "Structure & clarity",
+          "score": 5,
+          "rationale": "The candidate's presentation is well-structured and easy to follow. He logically transitions from his overall experience and role to his tech stack, project experience, and then to specific technical challenges he has overcome."
+        },
+        {
+          "label": "Technical depth",
+          "score": 5,
+          "rationale": "The candidate demonstrates strong technical depth by listing a comprehensive tech stack across frontend (React.js, HTML5, CSS3, React ecosystem), backend (Node.js), databases (PostgreSQL, MongoDB), cloud (AWS), and DevOps (Docker, Kubernetes). His proficiency in JavaScript ES6/ES7 and experience with Python/Django/Flask further highlights his versatility. The discussion about HTTP/2 protocols and Google Cloud Run limitations reveals a deeper understanding of infrastructure and performance."
+        },
+        {
+          "label": "Problem-solving",
+          "score": 5,
+          "rationale": "The candidate clearly articulates a significant problem related to resiliency, scalability, and file uploads on Google Cloud Run, specifically mentioning the HTTP/1.1 degradation and 32MB request limit. He demonstrates strong problem-solving by explaining how he understood and upgraded to the HTTP/2 protocol to address these issues, showcasing practical and advanced troubleshooting skills."
+        },
+        {
+          "label": "Confidence",
+          "score": 5,
+          "rationale": "The candidate displays high confidence throughout the interview. His voice is steady, his demeanor is composed, and he uses assured language when discussing his extensive experience and technical achievements. He appears comfortable and knowledgeable in his field."
+        }
+      ],
+      "overall_summary": "The candidate is an exceptional full-stack tech lead developer with around 9 years of experience. He communicates clearly and structures his answers effectively. He showcases deep technical expertise across a wide range of web development, cloud, and DevOps technologies. His ability to identify and solve complex technical challenges, such as optimizing for resiliency and scalability on cloud platforms by leveraging advanced protocols, is particularly impressive. He presents himself with strong confidence and a professional demeanor, making him a highly competent and valuable candidate."
+    },
+    "created_at": "2026-02-04T06:22:12.889781+00:00"
+  },
+  "697113b3fc863a43d278a0b3e3206956d23ae24e20792ceb3eeb415987f66118": {
+    "model": "gemini-2.5-flash-lite",
+    "analysis": {
+      "rubric": [
+        {
+          "label": "Communication",
+          "score": 4,
+          "rationale": "The candidate speaks clearly and articulately, maintaining good eye contact with the camera. They are easy to understand."
+        },
+        {
+          "label": "Structure & clarity",
+          "score": 4,
+          "rationale": "The candidate presents their experience in a logical and organized manner, starting with their overall experience and then detailing their technical stack and project experience."
+        },
+        {
+          "label": "Technical depth",
+          "score": 5,
+          "rationale": "The candidate demonstrates strong technical knowledge across frontend (React, HTML5, CSS3), backend (Node.js, PostgreSQL, MongoDB), cloud (AWS), and containerization (Docker, Kubernetes). They can articulate specific project challenges and solutions."
+        },
+        {
+          "label": "Problem-solving",
+          "score": 4,
+          "rationale": "The candidate effectively explains how they addressed challenges related to resilience and scalability by implementing queue-based systems and upgrading protocols, demonstrating practical problem-solving skills."
+        },
+        {
+          "label": "Confidence",
+          "score": 4,
+          "rationale": "The candidate appears confident and comfortable discussing their experience and technical skills. They maintain a professional demeanor throughout the interview."
+        }
+      ],
+      "overall_summary": "The candidate is a highly experienced full-stack developer with a strong grasp of modern technologies across the stack, including frontend, backend, cloud, and containerization. They articulate their experience and technical solutions clearly and confidently, demonstrating effective problem-solving skills, particularly in addressing scalability and resilience challenges. Their project experience, including work with both startups and established companies in e-commerce and healthcare, is impressive. They are a strong candidate."
+    },
+    "created_at": "2026-02-04T06:36:21.173617+00:00"
+  }
+}

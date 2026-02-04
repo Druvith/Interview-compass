@@ -29,6 +29,7 @@ export default function App() {
   const [rubricDraft, setRubricDraft] = useState<string[]>([]);
   const [newRubricItem, setNewRubricItem] = useState("");
   const [video, setVideo] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,8 +41,8 @@ export default function App() {
   const [resultHash, setResultHash] = useState("");
 
   const headlineText = useMemo(() => {
-    if (running) return "Analyzing interview performance...";
-    if (!analysis) return "Awaiting source input for analysis.";
+    if (running) return "Analyzing neural stream...";
+    if (!analysis) return "Awaiting vision input for analysis.";
     const summary = analysis.overall_summary?.trim();
     if (!summary) return "Evaluation complete.";
     // Pick the first sentence or first 100 chars for the headline
@@ -50,10 +51,10 @@ export default function App() {
   }, [analysis, running]);
 
   const fileMeta = useMemo(() => {
-    const filename = video?.name ?? "NO_FILE_LOADED";
-    const model = resultModel || currentModel || "NONE";
-    const hash = resultHash ? resultHash.slice(0, 8).toUpperCase() : "NONE";
-    return `FILE: ${filename} • MODEL: ${model} • HASH: ${hash}`;
+    const filename = video?.name ?? "NO_SOURCE_LOADED";
+    const model = resultModel || currentModel || "AUTO";
+    const hash = resultHash ? resultHash.slice(0, 8).toUpperCase() : "NULL";
+    return `SESSION // ${new Date().toLocaleDateString()} // ${filename} // ${model} // ${hash}`;
   }, [video, resultModel, currentModel, resultHash]);
 
   useEffect(() => {
@@ -75,6 +76,16 @@ export default function App() {
       })
       .catch(() => setStatus("OFFLINE: MODEL_LOAD_FAIL"));
   }, []);
+
+  useEffect(() => {
+    if (video) {
+      const url = URL.createObjectURL(video);
+      setVideoPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setVideoPreviewUrl(null);
+    }
+  }, [video]);
 
   async function handleSavePrompt() {
     if (!prompt) return;
@@ -119,7 +130,7 @@ export default function App() {
       return;
     }
     setRunning(true);
-    setStatus("BUSY: UPLOADING_ASSETS");
+    setStatus("BUSY: NEURAL_SYNC");
     setAnalysis(null);
     setResultModel("");
     setResultCached(false);
@@ -185,122 +196,125 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
+      <aside className="sidebar">
         <div className="brand">
-          INTERVIEW COMPASS <span>/ ANALYSIS</span>
+          <div className="brand-logo">Compass.</div>
+          <div className="brand-sub">Analytical Intelligence</div>
         </div>
-        <div className={`status-indicator ${running ? "busy" : ""}`}>
-          <div className="dot" />
-          {running ? "ANALYZING_STREAM" : "SYSTEM_READY"}
-        </div>
-      </header>
 
-      <main className="main-layout">
-        <aside className="sidebar">
-          <div className="section">
-            <div className="section-title">Source Input</div>
-            <label className="upload-zone">
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => setVideo(e.target.files?.[0] ?? null)}
-              />
-              <div className="upload-icon">↓</div>
-              <div className="upload-text">{video ? "Replace video" : "Drop interview video"}</div>
-              <div className="upload-hint">{video ? video.name : "MP4, MOV up to 100MB"}</div>
+        <div className="nav-section">
+          <div className="nav-label">01. Source</div>
+          <label className="upload-area">
+            <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} />
+            <div className="upload-icon">✦</div>
+            <div className="upload-text">{video ? "Replace Interview" : "Import Interview"}</div>
+            <div className="upload-hint">{video ? video.name : "MP4, MOV / Max 100MB"}</div>
+          </label>
+        </div>
+
+        <div className="nav-section">
+          <div className="nav-label">02. Configuration</div>
+          <div className="config-group">
+            <label className="nav-label" style={{ marginBottom: 0 }}>
+              Model Selection
             </label>
+            <select value={currentModel} onChange={(e) => handleModelChange(e.target.value)}>
+              {models.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
           </div>
-
-          <div className="section">
-            <div className="section-title">Configuration</div>
-            <div className="input-group">
-              <label htmlFor="model-select">Intelligence Model</label>
-              <select
-                id="model-select"
-                value={currentModel}
-                onChange={(e) => handleModelChange(e.target.value)}
-              >
-                {models.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="input-group">
-              <label>Evaluation Rubric</label>
-              <div className="chip-container">
-                {rubricDraft.map((item) => (
-                  <button key={item} className="chip" onClick={() => handleRemoveRubric(item)} type="button">
-                    {item} <span className="chip-remove">×</span>
-                  </button>
-                ))}
-              </div>
-              <div className="rubric-row">
-                <input
-                  type="text"
-                  value={newRubricItem}
-                  onChange={(e) => setNewRubricItem(e.target.value)}
-                  placeholder="+ Add criterion"
-                  onKeyDown={(e) => e.key === "Enter" && handleAddRubric()}
-                />
-                <button className="chip-add" onClick={handleAddRubric} type="button">
-                  Add
+          <div className="config-group">
+            <label className="nav-label" style={{ marginBottom: 0 }}>
+              Evaluation Rubric
+            </label>
+            <div className="chip-container">
+              {rubricDraft.map((item) => (
+                <button key={item} className="chip" onClick={() => handleRemoveRubric(item)} type="button">
+                  {item} <span className="chip-remove">×</span>
                 </button>
-              </div>
+              ))}
             </div>
+            <input
+              type="text"
+              value={newRubricItem}
+              onChange={(e) => setNewRubricItem(e.target.value)}
+              placeholder="+ Add Dimension"
+              onKeyDown={(e) => e.key === "Enter" && handleAddRubric()}
+            />
             <button className="btn-secondary" onClick={handleSavePrompt} disabled={saving}>
-              {saving ? "SAVING..." : "UPDATE_RUBRIC"}
+              {saving ? "SYNCING..." : "UPDATE_RUBRIC"}
             </button>
           </div>
+        </div>
 
-          <div className="sidebar-footer">
-            <button className="btn-primary" onClick={handleAnalyze} disabled={running}>
-              {running ? "PROCESSING..." : "INITIALIZE_ANALYSIS"}
-            </button>
-            <div className="status-line">{status || "NO_ERRORS_DETECTED"}</div>
+        <div className="sidebar-footer">
+          <button className="btn-primary" onClick={handleAnalyze} disabled={running}>
+            {running ? "PROCESSING..." : "START ANALYSIS"}
+            <span style={{ marginLeft: "8px" }}>→</span>
+          </button>
+          <div className="status-line">
+            <div className={`status-dot ${running ? "busy" : ""}`} />
+            {status || (running ? "Analyzing neural stream..." : "Awaiting vision input...")}
           </div>
-        </aside>
+        </div>
+      </aside>
 
-        <section className="workspace">
-          <div className="result-header">
+      <main className="workspace">
+        <header className="result-header reveal">
+          <div className="header-left">
             <div className="file-meta">{fileMeta}</div>
-            <div className="header-actions">
-              <button className="text-button" onClick={handleExport} disabled={!analysis}>
-                Export JSON
-              </button>
-            </div>
             <h1 className="headline">{headlineText}</h1>
           </div>
+          <button className="text-button" onClick={handleExport} disabled={!analysis}>
+            Export Intelligence
+          </button>
+        </header>
 
-          <div className="summary-card">
+        <section className="video-stage reveal delay-1">
+          {videoPreviewUrl ? (
+            <video src={videoPreviewUrl} controls className="video-preview" />
+          ) : (
+            <div className="video-placeholder">
+              <div className="play-ring">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              <div className="file-meta">No Preview Available</div>
+            </div>
+          )}
+        </section>
+
+        <div className="insights-grid">
+          <article className="summary-card reveal delay-2">
             <div className="section-title">Executive Summary</div>
             <div className="summary-text">
-              {analysis ? analysis.overall_summary : "System idle. Upload a video and initialize analysis to generate results."}
+              {analysis
+                ? analysis.overall_summary
+                : "System idle. Upload a video and initialize analysis to generate results."}
             </div>
-          </div>
+          </article>
 
-          <div className="section-title">Detailed Scoring</div>
           <div className="scores-grid">
             {analysis ? (
-              analysis.rubric.map((score) => (
-                <div className="score-card" key={score.label}>
-                  <div className="score-header">
-                    <div className="score-label">{score.label}</div>
-                    <div className="score-val">{score.score} / 5</div>
-                  </div>
+              analysis.rubric.map((score, idx) => (
+                <div className={`score-card reveal delay-${(idx % 4) + 1}`} key={score.label}>
+                  <div className="score-val">{score.score}</div>
+                  <div className="score-label">{score.label}</div>
+                  <p className="score-rationale">{score.rationale}</p>
                   <div className="bar-bg">
                     <div className="bar-fill" style={{ width: `${(score.score / 5) * 100}%` }} />
                   </div>
-                  <div className="score-rationale">{score.rationale}</div>
                 </div>
               ))
             ) : (
               <div className="empty-state">No scoring data available in the current session.</div>
             )}
           </div>
-        </section>
+        </div>
       </main>
     </div>
   );
