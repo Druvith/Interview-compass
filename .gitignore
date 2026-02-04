@@ -19,3 +19,10 @@ backend/data/tmp/
 backend/data/cache.json
 backend/data/model.json
 backend/data/prompt.json
+backend/backend/data/cache.json
+backend/backend/data/model.json
+backend/backend/data/prompt.json
+backend/backend/data/uploads/
+backend/backend/data/tmp/
+*.log
+frontend/*.log
